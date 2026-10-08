@@ -1,15 +1,31 @@
 from flask import Flask, request, jsonify
 import mlflow
 import mlflow.sklearn
-
+from sklearn.datasets import load_iris
+from sklearn.ensemble import RandomForestClassifier
 from prometheus_client import Counter, generate_latest
 
 app = Flask(__name__)
 
-# Load registered MLflow model
-model = mlflow.sklearn.load_model(
-    "models:/IrisRandomForest/1"
-)
+# Load registered MLflow model.
+# If the MLflow registry is unavailable, train a fallback model
+# so the Docker deployment remains self-contained.
+try:
+    model = mlflow.sklearn.load_model(
+        "models:/IrisRandomForest/1"
+    )
+    print("Loaded model from MLflow Model Registry")
+except Exception as e:
+    print("MLflow model unavailable. Using fallback RandomForest model.")
+    print(f"Reason: {e}")
+
+    iris = load_iris()
+    model = RandomForestClassifier(
+        n_estimators=100,
+        max_depth=5,
+        random_state=42
+    )
+    model.fit(iris.data, iris.target)
 
 # Prometheus counter
 prediction_counter = Counter(
