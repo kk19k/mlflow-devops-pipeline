@@ -1,0 +1,4 @@
+Flask
+mlflow==3.17.0
+scikit-learn
+prometheus-client
